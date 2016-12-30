@@ -1,4 +1,4 @@
-// Generated on 2016-12-30 using generator-angular-fullstack 5.0.0-alpha.3
+// Generated on 2016-12-29 using generator-angular-fullstack 5.0.0-alpha.3
 'use strict';
 
 import _ from 'lodash';
@@ -16,7 +16,7 @@ import {Server as KarmaServer} from 'karma';
 import runSequence from 'run-sequence';
 import {protractor, webdriver_update} from 'gulp-protractor';
 import {Instrumenter} from 'isparta';
-import webpack from 'webpack-stream';
+import webpack from 'webpack';
 import makeWebpackConfig from './webpack.make';
 
 var plugins = gulpLoadPlugins();
@@ -210,37 +210,24 @@ gulp.task('inject:scss', () => {
         .pipe(gulp.dest(`${clientPath}/app`));
 });
 
-gulp.task('webpack:dev', function() {
-    const webpackDevConfig = makeWebpackConfig({ DEV: true });
-    return gulp.src(webpackDevConfig.entry.app)
-        .pipe(plugins.plumber())
-        .pipe(webpack(webpackDevConfig))
-        .pipe(gulp.dest('.tmp'));
-});
+function webpackCompile(options, cb) { 
+    let compiler = webpack(makeWebpackConfig(options));
 
-gulp.task('webpack:dist', function() {
-    const webpackDistConfig = makeWebpackConfig({ BUILD: true });
-    return gulp.src(webpackDistConfig.entry.app)
-        .pipe(webpack(webpackDistConfig))
-        .on('error', (err) => {
-          this.emit('end'); // Recover from errors
-        })
-        .pipe(gulp.dest(`${paths.dist}/client`));
-});
+    compiler.run((err, stats) => {
+        if(err) return cb(err);
+        plugins.util.log(stats.toString({
+            colors: true,
+            timings: true,
+            chunks: options.BUILD
+        }));
+        cb();
+    });
+}
 
-gulp.task('webpack:test', function() {
-    const webpackTestConfig = makeWebpackConfig({ TEST: true });
-    return gulp.src(webpackTestConfig.entry.app)
-        .pipe(webpack(webpackTestConfig))
-        .pipe(gulp.dest('.tmp'));
-});
-
-gulp.task('webpack:e2e', function() {
-    const webpackE2eConfig = makeWebpackConfig({ E2E: true });
-    return gulp.src(webpackE2eConfig.entry.app)
-        .pipe(webpack(webpackE2eConfig))
-        .pipe(gulp.dest('.tmp'));
-});
+gulp.task('webpack:dev', cb => webpackCompile({ DEV: true }, cb));
+gulp.task('webpack:dist', cb => webpackCompile({ BUILD: true }, cb));
+gulp.task('webpack:test', cb => webpackCompile({ TEST: true }, cb));
+gulp.task('webpack:e2e', cb => webpackCompile({ E2E: true }, cb));
 
 gulp.task('styles', () => {
     return gulp.src(paths.client.mainStyle)
@@ -287,10 +274,9 @@ gulp.task('jscs', () => {
 
 gulp.task('clean:tmp', () => del(['.tmp/**/*'], {dot: true}));
 
-gulp.task('start:client', cb => {
-    whenServerReady(() => {
-        open('http://localhost:' + config.browserSyncPort);
-        cb();
+gulp.task('start:client', () => {
+    return require('./webpack.server').start(config.clientPort).then(() => {
+        open(`http://localhost:${config.clientPort}`);
     });
 });
 

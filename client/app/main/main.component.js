@@ -17,6 +17,8 @@ export class MainComponent {
   constructor(_Http_, _SocketService_) {
     this.Http = _Http_;
     this.SocketService = _SocketService_;
+
+    console.log('asdf')
   }
 
   ngOnInit() {

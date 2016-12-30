@@ -8,10 +8,10 @@
  * DELETE  /api/things/:id          ->  destroy
  */
 
-'use strict';
 
 import jsonpatch from 'fast-json-patch';
 import Thing from './thing.model';
+
 
 function respondWithResult(res, statusCode) {
   statusCode = statusCode || 200;
@@ -54,8 +54,7 @@ function handleEntityNotFound(res) {
   };
 }
 
-function handleError(res, statusCode) {
-  statusCode = statusCode || 500;
+function handleError(res, statusCode = 500) {
   return function(err) {
     res.status(statusCode).send(err);
   };
@@ -64,6 +63,7 @@ function handleError(res, statusCode) {
 // Gets a list of Things
 export function index(req, res) {
   return Thing.find().exec()
+
     .then(respondWithResult(res))
     .catch(handleError(res));
 }
